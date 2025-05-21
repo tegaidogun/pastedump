@@ -1,33 +1,20 @@
 import PasteView from "@/components/paste-view"
+import { notFound } from "next/navigation"
+import { getPaste } from "@/lib/db"
+import { Paste } from "@/lib/constants"
 
-// This would normally fetch data from an API
-const getMockPaste = (id: string) => {
-  return {
-    id,
-    title: "Example TypeScript Function",
-    content: `function calculateTotal(items: Array<{ price: number; quantity: number }>): number {
-  return items.reduce((total, item) => {
-    return total + item.price * item.quantity;
-  }, 0);
+async function getPasteData(id: string): Promise<Paste | null> {
+  // In a real app with a remote API, you would use fetch here
+  // But since we're using a local file-based storage, we can call the function directly
+  return getPaste(id);
 }
 
-// Example usage
-const cartItems = [
-  { price: 10, quantity: 2 },
-  { price: 15, quantity: 1 },
-  { price: 5, quantity: 4 }
-];
+export default async function PastePage({ params }: { params: { id: string } }) {
+  const paste = await getPasteData(params.id);
 
-const total = calculateTotal(cartItems);
-console.log(\`Total: $\${total}\`); // Output: Total: $50`,
-    createdAt: "2023-05-15T10:30:00Z",
-    viewCount: 42,
-    language: "typescript",
+  if (!paste) {
+    notFound();
   }
-}
-
-export default function PastePage({ params }: { params: { id: string } }) {
-  const paste = getMockPaste(params.id)
 
   return (
     <div className="container py-8 md:py-12">

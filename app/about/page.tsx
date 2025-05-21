@@ -25,7 +25,7 @@ export default function AboutPage() {
             <CardContent>
               <p>
                 PasteDump was created with a simple goal: to provide a clean, fast, and efficient way to share code and
-                text snippets. We believe in minimalism and speed, focusing on what matters most - your content.
+                text snippets. The focus is on minimalism and speed, prioritizing what matters most - your content.
               </p>
             </CardContent>
           </Card>
@@ -51,7 +51,7 @@ export default function AboutPage() {
                 <li className="flex items-start">
                   <span className="mr-2 text-primary">•</span>
                   <span>
-                    <strong>Expiration Options</strong>: Control how long your pastes are available
+                    <strong>Expiration Options</strong>: Pastes automatically expire after a maximum of one week
                   </span>
                 </li>
                 <li className="flex items-start">
@@ -76,38 +76,32 @@ export default function AboutPage() {
             </CardHeader>
             <CardContent>
               <p>
-                We take privacy seriously. All pastes are assigned random IDs that are not easily guessable. We don't
-                track personal information beyond what's necessary for the service to function.
+                Privacy is taken seriously here. All pastes are assigned random IDs that are not easily guessable, and 
+                no personal information is tracked beyond what's necessary for the service to function.
               </p>
               <p className="mt-4">
-                For sensitive information, we recommend using the expiration feature to ensure your data is
-                automatically removed after a set period.
+                For sensitive information, it's recommended to use shorter expiration times to ensure your data is
+                automatically removed as soon as possible.
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Contact Us</CardTitle>
+              <CardTitle>Contact</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>Have questions, suggestions, or found a bug? We'd love to hear from you!</p>
+              <p>Have questions, suggestions, or found a bug? I'd love to hear from you!</p>
               <p className="mt-4">
                 Email:{" "}
-                <a href="mailto:contact@pastedump.com" className="text-primary hover:underline">
-                  contact@pastedump.com
-                </a>
-              </p>
-              <p className="mt-2">
-                Twitter:{" "}
-                <a href="https://twitter.com/pastedump" className="text-primary hover:underline">
-                  @pastedump
+                <a href="mailto:idogunoghenetega@gmail.com" className="text-primary hover:underline">
+                  idogunoghenetega@gmail.com
                 </a>
               </p>
               <p className="mt-2">
                 GitHub:{" "}
-                <a href="https://github.com/pastedump" className="text-primary hover:underline">
-                  github.com/pastedump
+                <a href="https://github.com/tegaidogun" className="text-primary hover:underline">
+                  github.com/tegaidogun
                 </a>
               </p>
             </CardContent>

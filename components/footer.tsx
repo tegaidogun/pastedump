@@ -5,7 +5,9 @@ export default function Footer() {
         <p className="text-sm text-muted-foreground">
           &copy; {new Date().getFullYear()} PasteDump. All rights reserved.
         </p>
-        <p className="text-sm text-muted-foreground">Created with ❤️ by PasteDump Team</p>
+        <p className="text-sm text-muted-foreground">
+          Created with ❤️ by <a href="https://github.com/tegaidogun" className="hover:underline">Tega Idogun</a>
+        </p>
       </div>
     </footer>
   )

@@ -9,8 +9,9 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
   title: "PasteDump - A Minimalist Pastebin Clone",
-  description: "A fast and minimalist pastebin clone for sharing code and text snippets",
-    generator: 'v0.dev'
+  description: "A fast and minimalist pastebin clone for sharing code and text snippets by Tega Idogun",
+  generator: 'Next.js',
+  creator: 'Tega Idogun'
 }
 
 export default function RootLayout({
