@@ -2,15 +2,38 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Copy, Download, ExternalLink, Eye, FileText, Plus, ChevronDown } from "lucide-react"
+import { Copy, Download, ExternalLink, Eye, FileText, Plus, ChevronDown, Code } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Paste } from "@/lib/constants"
+import { Paste, SUPPORTED_LANGUAGES } from "@/lib/constants"
+import dynamic from 'next/dynamic'
+
+// Dynamically import SyntaxHighlighter to avoid server-side rendering issues
+const SyntaxHighlighter = dynamic(
+  () => import('react-syntax-highlighter/dist/cjs/prism').then(mod => mod.default),
+  { ssr: false }
+);
 
 export default function PasteView({ paste }: { paste: Paste }) {
   // Local state for view count to prevent changing the passed prop directly
   const [viewCount, setViewCount] = useState(paste.view_count);
+  const [highlighterTheme, setHighlighterTheme] = useState({});
+  
+  // Get language label for display
+  const language = SUPPORTED_LANGUAGES.find(lang => lang.value === paste.syntax) || 
+    { value: 'plain', label: 'Plain Text' };
+  
+  // Load syntax highlighter style
+  useEffect(() => {
+    if (Object.keys(highlighterTheme).length === 0) {
+      import('react-syntax-highlighter/dist/cjs/styles/prism/vsc-dark-plus')
+        .then(style => {
+          setHighlighterTheme(style.default);
+        })
+        .catch(err => console.error("Failed to load syntax highlighter style:", err));
+    }
+  }, [highlighterTheme]);
   
   // Only increment view count once on component mount
   useEffect(() => {
@@ -66,6 +89,10 @@ export default function PasteView({ paste }: { paste: Paste }) {
                 </span>
                 <span>
                   ID: <code className="text-xs bg-background/70 px-1 py-0.5 rounded">{paste.id}</code>
+                </span>
+                <span className="flex items-center gap-1">
+                  <Code className="h-4 w-4" />
+                  {language.label}
                 </span>
                 {paste.expires_at && (
                   <span>Expires: {formatDate(paste.expires_at)}</span>
@@ -135,20 +162,40 @@ export default function PasteView({ paste }: { paste: Paste }) {
         <CardContent>
           <div className="relative rounded-md border border-border/50 bg-background/50 overflow-hidden">
             <div className="overflow-x-auto">
-              <pre className="p-4 text-sm font-mono">
-                <div className="flex">
-                  <div className="select-none text-muted-foreground pr-4 text-right">
-                    {paste.content.split("\n").map((_, i) => (
-                      <div key={i}>{i + 1}</div>
-                    ))}
+              <Suspense fallback={
+                <pre className="p-4 text-sm font-mono">
+                  <div className="flex">
+                    <div className="select-none text-muted-foreground pr-4 text-right">
+                      {paste.content.split('\n').map((_, i) => (
+                        <div key={i}>{i + 1}</div>
+                      ))}
+                    </div>
+                    <code className="flex-1">
+                      {paste.content.split('\n').map((line, i) => (
+                        <div key={i}>{line || ' '}</div>
+                      ))}
+                    </code>
                   </div>
-                  <code className="flex-1">
-                    {paste.content.split("\n").map((line, i) => (
-                      <div key={i}>{line || " "}</div>
-                    ))}
-                  </code>
-                </div>
-              </pre>
+                </pre>
+              }>
+                {Object.keys(highlighterTheme).length > 0 ? (
+                  <SyntaxHighlighter
+                    language={paste.syntax}
+                    style={highlighterTheme}
+                    showLineNumbers
+                    wrapLines
+                    customStyle={{
+                      margin: 0,
+                      borderRadius: 0,
+                      minHeight: 100,
+                    }}
+                  >
+                    {paste.content}
+                  </SyntaxHighlighter>
+                ) : (
+                  <div className="p-4">Loading syntax highlighter...</div>
+                )}
+              </Suspense>
             </div>
           </div>
         </CardContent>

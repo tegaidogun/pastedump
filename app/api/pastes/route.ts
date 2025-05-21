@@ -55,7 +55,8 @@ export async function GET() {
         id: paste.id,
         title: paste.title,
         created_at: paste.created_at,
-        view_count: paste.view_count
+        view_count: paste.view_count,
+        syntax: paste.syntax
       }))
     });
     

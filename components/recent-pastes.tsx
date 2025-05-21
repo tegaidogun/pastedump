@@ -2,10 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, Code } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { Paste } from "@/lib/constants"
+import { Paste, SUPPORTED_LANGUAGES } from "@/lib/constants"
 
 export default function RecentPastes() {
   const [recentPastes, setRecentPastes] = useState<Paste[]>([]);
@@ -45,6 +45,11 @@ export default function RecentPastes() {
     }).format(date);
   };
 
+  const getLanguageLabel = (syntax: string) => {
+    const language = SUPPORTED_LANGUAGES.find(lang => lang.value === syntax);
+    return language ? language.label : 'Plain Text';
+  };
+
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur">
       <CardHeader>
@@ -63,6 +68,7 @@ export default function RecentPastes() {
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Title</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">ID</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Created</th>
+                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Language</th>
                   <th className="text-right py-3 px-2 text-sm font-medium text-muted-foreground">Views</th>
                   <th className="text-right py-3 px-2 text-sm font-medium text-muted-foreground">Action</th>
                 </tr>
@@ -73,6 +79,12 @@ export default function RecentPastes() {
                     <td className="py-3 px-2 text-sm truncate max-w-[200px]">{paste.title || "Untitled paste"}</td>
                     <td className="py-3 px-2 text-sm font-mono">{paste.id}</td>
                     <td className="py-3 px-2 text-sm text-muted-foreground">{formatDate(paste.created_at)}</td>
+                    <td className="py-3 px-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Code className="h-3.5 w-3.5" />
+                        <span>{getLanguageLabel(paste.syntax)}</span>
+                      </div>
+                    </td>
                     <td className="py-3 px-2 text-sm text-muted-foreground text-right">{paste.view_count}</td>
                     <td className="py-3 px-2 text-right">
                       <Button asChild variant="ghost" size="sm">
