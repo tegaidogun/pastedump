@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { incrementViewCount, getPaste } from '@/lib/db';
 
 // POST /api/pastes/[id]/increment-view - Increment view count once
 export async function POST(
@@ -12,21 +11,14 @@ export async function POST(
     if (!id) {
       return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
-    
-    const DATA_DIR = path.join(process.cwd(), 'data');
-    const PASTES_DIR = path.join(DATA_DIR, 'pastes');
-    const filePath = path.join(PASTES_DIR, `${id}.json`);
-    
-    if (!fs.existsSync(filePath)) {
+
+    // Check if paste exists before incrementing
+    const paste = await getPaste(id);
+    if (!paste) {
       return NextResponse.json({ error: 'Paste not found' }, { status: 404 });
     }
     
-    const pasteData = fs.readFileSync(filePath, 'utf-8');
-    const paste = JSON.parse(pasteData);
-    
-    // Increment view count
-    paste.view_count += 1;
-    fs.writeFileSync(filePath, JSON.stringify(paste, null, 2));
+    await incrementViewCount(id);
     
     return NextResponse.json({ success: true });
     

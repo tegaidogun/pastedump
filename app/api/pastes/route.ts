@@ -1,38 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createPaste, calculateExpirationDate, initializeDatabase } from '@/lib/db';
+import { createPaste, getRecentPastes } from '@/lib/db';
+import { z } from 'zod';
 
-// Initialize database on startup
-initializeDatabase();
+const pasteSchema = z.object({
+  title: z.string().optional(),
+  content: z.string().min(1, 'Content is required'),
+  language: z.string().optional(),
+  expiration: z.string(),
+  author: z.string().optional(),
+  short_id: z.string().optional(),
+});
 
 // POST /api/pastes - Create a new paste
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Validate request body
-    if (!body.content || body.content.trim() === '') {
+    const validation = pasteSchema.safeParse(body);
+
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Content is required' },
+        { error: 'Invalid request body', details: validation.error.errors },
         { status: 400 }
       );
     }
     
-    // Process expiration
-    const expirationOption = body.expiration || 'never';
-    const expires_at = calculateExpirationDate(expirationOption);
-    
     // Create the paste
-    const paste = createPaste({
-      title: body.title || '',
-      content: body.content,
-      syntax: body.syntax || 'plain',
-      expires_at
+    const paste = await createPaste({
+      ...validation.data,
+      author: 'Tega Idogun',
     });
     
     // Return the created paste with URL
     return NextResponse.json({
       ...paste,
-      url: `/paste/${paste.id}`
+      url: `/paste/${paste.short_id}`
     }, { status: 201 });
     
   } catch (error) {
@@ -47,16 +48,15 @@ export async function POST(request: NextRequest) {
 // GET /api/pastes - Get recent pastes
 export async function GET() {
   try {
-    const { getRecentPastes } = await import('@/lib/db');
-    const pastes = getRecentPastes(5);
+    const pastes = await getRecentPastes(5);
     
     return NextResponse.json({
       pastes: pastes.map(paste => ({
-        id: paste.id,
+        id: paste.short_id,
         title: paste.title,
         created_at: paste.created_at,
         view_count: paste.view_count,
-        syntax: paste.syntax
+        language: paste.language
       }))
     });
     

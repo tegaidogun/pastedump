@@ -10,6 +10,7 @@ import { useState, FormEvent, useEffect, Suspense } from "react"
 import { useRouter } from "next/navigation"
 import { MAX_CONTENT_LENGTH, SUPPORTED_LANGUAGES } from "@/lib/constants"
 import dynamic from 'next/dynamic'
+import { useTheme } from "next-themes"
 
 // Dynamically import SyntaxHighlighter to avoid server-side rendering issues
 const SyntaxHighlighter = dynamic(
@@ -19,6 +20,7 @@ const SyntaxHighlighter = dynamic(
 
 export default function NewPasteForm() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -29,17 +31,16 @@ export default function NewPasteForm() {
   const [isEditing, setIsEditing] = useState(true);
   const [highlighterTheme, setHighlighterTheme] = useState({});
 
-  // Load the syntax highlighter style
+  // Load the syntax highlighter style based on the current theme
   useEffect(() => {
-    if (!isEditing && Object.keys(highlighterTheme).length === 0) {
-      // Load the style when needed
-      import('react-syntax-highlighter/dist/cjs/styles/prism/vsc-dark-plus')
-        .then(style => {
-          setHighlighterTheme(style.default);
-        })
-        .catch(err => console.error("Failed to load syntax highlighter style:", err));
-    }
-  }, [isEditing, highlighterTheme]);
+    // For dark theme, use a light highlighter theme, and for light theme, use a dark one.
+    const styleName = theme === 'dark' ? 'vs' : 'vsc-dark-plus';
+    import(`react-syntax-highlighter/dist/cjs/styles/prism/${styleName}`)
+      .then(style => {
+        setHighlighterTheme(style.default);
+      })
+      .catch(err => console.error("Failed to load syntax highlighter style:", err));
+  }, [theme, isEditing]);
 
   // Calculate remaining characters
   const contentLength = formData.content.length;
@@ -189,8 +190,11 @@ export default function NewPasteForm() {
                       style={highlighterTheme}
                       customStyle={{
                         margin: 0,
+                        padding: '1rem',
                         borderRadius: 0,
                         minHeight: 300,
+                        backgroundColor: theme === 'dark' ? '#f5f5f5' : '#1e1e1e',
+                        color: theme === 'dark' ? '#333' : '#ddd',
                       }}
                       showLineNumbers
                     >

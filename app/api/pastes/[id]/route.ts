@@ -16,7 +16,7 @@ export async function GET(
       );
     }
     
-    const paste = getPaste(id);
+    const paste = await getPaste(id);
     
     if (!paste) {
       return NextResponse.json(

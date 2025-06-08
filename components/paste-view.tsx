@@ -8,6 +8,7 @@ import { useEffect, useState, Suspense } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Paste, SUPPORTED_LANGUAGES } from "@/lib/constants"
 import dynamic from 'next/dynamic'
+import { useTheme } from "next-themes";
 
 // Dynamically import SyntaxHighlighter to avoid server-side rendering issues
 const SyntaxHighlighter = dynamic(
@@ -16,6 +17,7 @@ const SyntaxHighlighter = dynamic(
 );
 
 export default function PasteView({ paste }: { paste: Paste }) {
+  const { theme } = useTheme();
   // Local state for view count to prevent changing the passed prop directly
   const [viewCount, setViewCount] = useState(paste.view_count);
   const [highlighterTheme, setHighlighterTheme] = useState({});
@@ -26,14 +28,13 @@ export default function PasteView({ paste }: { paste: Paste }) {
   
   // Load syntax highlighter style
   useEffect(() => {
-    if (Object.keys(highlighterTheme).length === 0) {
-      import('react-syntax-highlighter/dist/cjs/styles/prism/vsc-dark-plus')
-        .then(style => {
-          setHighlighterTheme(style.default);
-        })
-        .catch(err => console.error("Failed to load syntax highlighter style:", err));
-    }
-  }, [highlighterTheme]);
+    const styleName = theme === 'dark' ? 'vsc-dark-plus' : 'vs';
+    import(`react-syntax-highlighter/dist/cjs/styles/prism/${styleName}`)
+      .then(style => {
+        setHighlighterTheme(style.default);
+      })
+      .catch(err => console.error("Failed to load syntax highlighter style:", err));
+  }, [theme]);
   
   // Only increment view count once on component mount
   useEffect(() => {

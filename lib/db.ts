@@ -1,12 +1,7 @@
 // "use client";
 
-import fs from 'fs';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { sql } from '@vercel/postgres';
 import { Paste, MAX_CONTENT_LENGTH } from './constants';
-
-const DATA_DIR = path.join(process.cwd(), 'data');
-const PASTES_DIR = path.join(DATA_DIR, 'pastes');
 
 // Generate a short ID (6 characters alphanumeric)
 function generateShortId(): string {
@@ -18,191 +13,138 @@ function generateShortId(): string {
     id += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   
-  // Check if ID already exists
-  const filePath = path.join(PASTES_DIR, `${id}.json`);
-  if (fs.existsSync(filePath)) {
-    // If ID exists, generate a new one recursively
-    return generateShortId();
-  }
-  
   return id;
 }
 
-// Ensure the data directories exist
-export function initializeDatabase() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR);
-  }
-  
-  if (!fs.existsSync(PASTES_DIR)) {
-    fs.mkdirSync(PASTES_DIR);
-  }
-}
-
 // Create a new paste
-export function createPaste(paste: Omit<Paste, 'id' | 'created_at' | 'view_count'>): Paste {
-  // Use short ID instead of UUID
-  const id = generateShortId();
-  const created_at = new Date().toISOString();
-  
-  // Trim content if it exceeds maximum length
+export async function createPaste(
+  paste: Omit<Paste, 'id' | 'created_at' | 'view_count' | 'expiration'> & {
+    expiration: string;
+    short_id?: string;
+  }
+): Promise<Paste> {
+  let short_id = paste.short_id;
+
+  // If no short_id is provided, generate one until we find one that is not in use
+  if (!short_id) {
+    let isUnique = false;
+    while (!isUnique) {
+      short_id = generateShortId();
+      const { rows } = await sql`SELECT id FROM pastes WHERE short_id = ${short_id}`;
+      if (rows.length === 0) {
+        isUnique = true;
+      }
+    }
+  }
+
   let content = paste.content;
   if (content.length > MAX_CONTENT_LENGTH) {
     content = content.substring(0, MAX_CONTENT_LENGTH);
   }
-  
-  const newPaste: Paste = {
-    id,
-    title: paste.title || 'Untitled paste',
-    content,
-    syntax: paste.syntax || 'plain',
-    created_at,
-    expires_at: paste.expires_at,
-    view_count: 0
-  };
-  
-  const filePath = path.join(PASTES_DIR, `${id}.json`);
-  fs.writeFileSync(filePath, JSON.stringify(newPaste, null, 2));
-  
-  return newPaste;
+
+  const expirationDate = calculateExpirationDate(paste.expiration);
+
+  const result = await sql`
+    INSERT INTO pastes (short_id, title, content, language, expiration, author)
+    VALUES (${short_id}, ${paste.title || 'Untitled paste'}, ${content}, ${
+    paste.language || 'plain'
+  }, ${expirationDate}, ${paste.author})
+    RETURNING id, short_id, title, content, language, created_at, expiration, view_count, author;
+  `;
+
+  return result.rows[0] as Paste;
 }
 
-// Get a paste by ID
-export function getPaste(id: string): Paste | null {
-  const filePath = path.join(PASTES_DIR, `${id}.json`);
-  
-  if (!fs.existsSync(filePath)) {
+// Get a paste by short_id
+export async function getPaste(short_id: string): Promise<Paste | null> {
+  const { rows } = await sql`
+    SELECT id, short_id, title, content, language, created_at, expiration, view_count, author 
+    FROM pastes 
+    WHERE short_id = ${short_id} AND expiration > NOW()
+  `;
+
+  if (rows.length === 0) {
     return null;
   }
-  
-  const pasteData = fs.readFileSync(filePath, 'utf-8');
-  const paste = JSON.parse(pasteData) as Paste;
-  
-  // Check if paste has expired
-  if (paste.expires_at && new Date(paste.expires_at) < new Date()) {
-    // Delete expired paste
-    fs.unlinkSync(filePath);
-    return null;
-  }
-  
-  // No longer incrementing view count here
-  return paste;
+
+  return rows[0] as Paste;
+}
+
+// Increment view count for a paste
+export async function incrementViewCount(short_id: string): Promise<void> {
+    await sql`UPDATE pastes SET view_count = view_count + 1 WHERE short_id = ${short_id}`;
 }
 
 // Get recent pastes
-export function getRecentPastes(limit = 5): Paste[] {
-  initializeDatabase();
-  
-  if (!fs.existsSync(PASTES_DIR)) {
-    return [];
-  }
-  
-  const files = fs.readdirSync(PASTES_DIR)
-    .filter(file => file.endsWith('.json'));
-  
-  const pastes: Paste[] = [];
-  
-  for (const file of files) {
-    const filePath = path.join(PASTES_DIR, file);
-    const pasteData = fs.readFileSync(filePath, 'utf-8');
-    const paste = JSON.parse(pasteData) as Paste;
-    
-    // Skip expired pastes
-    if (paste.expires_at && new Date(paste.expires_at) < new Date()) {
-      fs.unlinkSync(filePath);
-      continue;
-    }
-    
-    pastes.push(paste);
-  }
-  
-  // Sort by creation date (newest first) and limit
-  return pastes
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, limit);
+export async function getRecentPastes(limit = 5): Promise<Paste[]> {
+  const { rows } = await sql`
+    SELECT id, short_id, title, content, language, created_at, expiration, view_count, author 
+    FROM pastes 
+    WHERE expiration > NOW()
+    ORDER BY created_at DESC 
+    LIMIT ${limit}
+  `;
+  return rows as Paste[];
 }
 
 // Search pastes by content, title, or ID
-export function searchPastes(query: string, page = 1, perPage = 20): { results: Paste[], total: number } {
-  initializeDatabase();
-  
-  if (!fs.existsSync(PASTES_DIR)) {
-    return { results: [], total: 0 };
+export async function searchPastes(
+  query: string,
+  page = 1,
+  perPage = 20
+): Promise<{ results: Paste[]; total: number }> {
+  const offset = (page - 1) * perPage;
+  const queryLower = `%${query.toLowerCase()}%`;
+
+  // First, try exact ID match
+  const { rows: exactMatch } = await sql`
+    SELECT id, short_id, title, content, language, created_at, expiration, view_count, author 
+    FROM pastes 
+    WHERE short_id = ${query} AND expiration > NOW()
+  `;
+
+  if (exactMatch.length > 0) {
+    return { results: exactMatch as Paste[], total: 1 };
   }
+
+  // Then search content and title
+  const { rows: searchResults } = await sql`
+    SELECT id, short_id, title, content, language, created_at, expiration, view_count, author 
+    FROM pastes 
+    WHERE (LOWER(title) LIKE ${queryLower} OR LOWER(content) LIKE ${queryLower}) AND expiration > NOW()
+    ORDER BY created_at DESC
+    LIMIT ${perPage} OFFSET ${offset}
+  `;
+
+  const { rows: totalRows } = await sql`
+    SELECT COUNT(*) as total
+    FROM pastes
+    WHERE (LOWER(title) LIKE ${queryLower} OR LOWER(content) LIKE ${queryLower}) AND expiration > NOW()
+  `;
   
-  const files = fs.readdirSync(PASTES_DIR)
-    .filter(file => file.endsWith('.json'));
-  
-  const matchingPastes: Paste[] = [];
-  const queryLower = query.toLowerCase();
-  
-  // First, try exact ID match (prioritize this)
-  if (query.length <= 6) {
-    const exactIdFile = `${query}.json`;
-    if (files.includes(exactIdFile)) {
-      const filePath = path.join(PASTES_DIR, exactIdFile);
-      const pasteData = fs.readFileSync(filePath, 'utf-8');
-      const paste = JSON.parse(pasteData) as Paste;
-      
-      // Skip if paste has expired
-      if (!(paste.expires_at && new Date(paste.expires_at) < new Date())) {
-        return { 
-          results: [paste], 
-          total: 1 
-        };
-      }
-    }
-  }
-  
-  // Then do the regular search
-  for (const file of files) {
-    const filePath = path.join(PASTES_DIR, file);
-    const pasteData = fs.readFileSync(filePath, 'utf-8');
-    const paste = JSON.parse(pasteData) as Paste;
-    
-    // Skip expired pastes
-    if (paste.expires_at && new Date(paste.expires_at) < new Date()) {
-      fs.unlinkSync(filePath);
-      continue;
-    }
-    
-    // Check if query matches title, content, or ID
-    if (paste.id.toLowerCase().includes(queryLower) || 
-        paste.title.toLowerCase().includes(queryLower) ||
-        paste.content.toLowerCase().includes(queryLower)) {
-      matchingPastes.push(paste);
-    }
-  }
-  
-  const sortedPastes = matchingPastes.sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-  
-  const start = (page - 1) * perPage;
-  const end = start + perPage;
-  const paginatedResults = sortedPastes.slice(start, end);
-  
+  const total = totalRows[0].total as number;
+
   return {
-    results: paginatedResults,
-    total: matchingPastes.length
+    results: searchResults as Paste[],
+    total,
   };
 }
 
 // Calculate expiration date based on expiration option
-export function calculateExpirationDate(expiration: string): string | null {
-  const now = new Date();
+export function calculateExpirationDate(expiration: string): string {
+    const now = new Date();
   
-  switch (expiration) {
-    case '5min':
-      return new Date(now.getTime() + 5 * 60 * 1000).toISOString();
-    case '1hour':
-      return new Date(now.getTime() + 60 * 60 * 1000).toISOString();
-    case '1day':
-      return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-    case '1week':
-      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    default:
-      // Default to 1 week if no expiration is specified
-      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  }
-} 
+    switch (expiration) {
+      case '5min':
+        return new Date(now.getTime() + 5 * 60 * 1000).toISOString();
+      case '1hour':
+        return new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+      case '1day':
+        return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+      case '1week':
+        return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      default:
+        // Default to 1 week if no expiration is specified
+        return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    }
+  } 

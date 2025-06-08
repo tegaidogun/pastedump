@@ -3,12 +3,10 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "isolatedModules": true
+    "module": "commonjs"
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "tests/**/*.ts",
+    "jest.config.mjs"
+  ]
 } 

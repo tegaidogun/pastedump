@@ -3,13 +3,15 @@ export const MAX_CONTENT_LENGTH = 100 * 1024; // 100KB
 
 // Types
 export interface Paste {
-  id: string;
+  id: number;
+  short_id?: string | null;
   title: string;
   content: string;
-  syntax: string;
+  language: string;
   created_at: string;
-  expires_at: string | null;
+  expiration: string;
   view_count: number;
+  author?: string | null;
 }
 
 // Supported syntax highlighting languages

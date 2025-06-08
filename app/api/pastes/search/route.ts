@@ -16,11 +16,11 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const { results, total } = searchPastes(query, page, perPage);
+    const { results, total } = await searchPastes(query, page, perPage);
     
     return NextResponse.json({
       results: results.map(paste => ({
-        id: paste.id,
+        id: paste.short_id,
         title: paste.title,
         created_at: paste.created_at,
         view_count: paste.view_count
