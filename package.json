@@ -54,7 +54,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "npm run migrate:dev -- up && next build",
+    "build": "node-pg-migrate up && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "npm run migrate:test -- up && jest",

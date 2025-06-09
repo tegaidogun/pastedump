@@ -89,33 +89,33 @@ export default function NewPasteForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <Card className="border-border/50 bg-card/50 backdrop-blur">
-        <CardContent className="pt-6 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title (optional)</Label>
+    <Card className="border-border/50 bg-card/50 backdrop-blur">
+      <CardContent className="pt-6 space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="title">Title (optional)</Label>
             <Input 
               id="title" 
               placeholder="Untitled paste" 
               className="bg-background/50"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
-          </div>
+          />
+        </div>
 
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             <div className="space-y-2 w-full sm:w-1/2">
-              <Label htmlFor="expiration">Expiration</Label>
+          <Label htmlFor="expiration">Expiration</Label>
               <Select 
                 defaultValue="1week"
                 onValueChange={(value) => setFormData({ ...formData, expiration: value })}
               >
-                <SelectTrigger id="expiration" className="bg-background/50">
-                  <SelectValue placeholder="Select expiration" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5min">5 minutes</SelectItem>
-                  <SelectItem value="1hour">1 hour</SelectItem>
-                  <SelectItem value="1day">1 day</SelectItem>
+            <SelectTrigger id="expiration" className="bg-background/50">
+              <SelectValue placeholder="Select expiration" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5min">5 minutes</SelectItem>
+              <SelectItem value="1hour">1 hour</SelectItem>
+              <SelectItem value="1day">1 day</SelectItem>
                   <SelectItem value="1week">1 week</SelectItem>
                 </SelectContent>
               </Select>
@@ -136,8 +136,8 @@ export default function NewPasteForm() {
                       {language.label}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
+            </SelectContent>
+          </Select>
             </div>
           </div>
 
@@ -212,10 +212,10 @@ export default function NewPasteForm() {
                 Your paste exceeds the maximum length and will be truncated when saved.
               </p>
             )}
-          </div>
-        </CardContent>
+        </div>
+      </CardContent>
 
-        <CardFooter>
+      <CardFooter>
           <Button 
             type="submit" 
             className="w-full"
@@ -223,8 +223,8 @@ export default function NewPasteForm() {
           >
             {isSubmitting ? "Creating..." : "Create Paste"}
           </Button>
-        </CardFooter>
-      </Card>
+      </CardFooter>
+    </Card>
     </form>
   )
 }

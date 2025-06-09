@@ -59,37 +59,37 @@ export default function SearchResults({ searchResults }: SearchResultsProps) {
       <CardContent>
         {hasResults ? (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border/50">
-                    <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Title</th>
-                    <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">ID</th>
-                    <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Date</th>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Title</th>
+                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">ID</th>
+                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Date</th>
                     <th className="text-right py-3 px-2 text-sm font-medium text-muted-foreground">Views</th>
-                    <th className="text-right py-3 px-2 text-sm font-medium text-muted-foreground">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
+                  <th className="text-right py-3 px-2 text-sm font-medium text-muted-foreground">Action</th>
+                </tr>
+              </thead>
+              <tbody>
                   {results.map((result) => (
-                    <tr key={result.id} className="border-b border-border/50 last:border-0">
+                  <tr key={result.id} className="border-b border-border/50 last:border-0">
                       <td className="py-3 px-2 text-sm truncate max-w-[200px]">{result.title || "Untitled paste"}</td>
-                      <td className="py-3 px-2 text-sm font-mono">{result.id}</td>
+                    <td className="py-3 px-2 text-sm font-mono">{result.id}</td>
                       <td className="py-3 px-2 text-sm text-muted-foreground">{formatDate(result.created_at)}</td>
                       <td className="py-3 px-2 text-sm text-muted-foreground text-right">{result.view_count}</td>
-                      <td className="py-3 px-2 text-right">
-                        <Button asChild variant="ghost" size="sm">
-                          <Link href={`/paste/${result.id}`}>
-                            <ExternalLink className="h-4 w-4 mr-1" />
+                    <td className="py-3 px-2 text-right">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/paste/${result.id}`}>
+                          <ExternalLink className="h-4 w-4 mr-1" />
                             View
-                          </Link>
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </Link>
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
             
             {showPagination && (
               <div className="flex items-center justify-between mt-6">
@@ -128,9 +128,9 @@ export default function SearchResults({ searchResults }: SearchResultsProps) {
               {hasQuery ? "No results found" : "Enter a search query to find pastes"}
             </h3>
             {hasQuery && (
-              <p className="text-muted-foreground max-w-md mx-auto">
+            <p className="text-muted-foreground max-w-md mx-auto">
                 We couldn't find any pastes matching "{query}". Try using different keywords.
-              </p>
+            </p>
             )}
           </div>
         )}

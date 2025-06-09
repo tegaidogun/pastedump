@@ -164,20 +164,20 @@ export default function PasteView({ paste }: { paste: Paste }) {
           <div className="relative rounded-md border border-border/50 bg-background/50 overflow-hidden">
             <div className="overflow-x-auto">
               <Suspense fallback={
-                <pre className="p-4 text-sm font-mono">
-                  <div className="flex">
-                    <div className="select-none text-muted-foreground pr-4 text-right">
+              <pre className="p-4 text-sm font-mono">
+                <div className="flex">
+                  <div className="select-none text-muted-foreground pr-4 text-right">
                       {paste.content.split('\n').map((_, i) => (
-                        <div key={i}>{i + 1}</div>
-                      ))}
-                    </div>
-                    <code className="flex-1">
+                      <div key={i}>{i + 1}</div>
+                    ))}
+                  </div>
+                  <code className="flex-1">
                       {paste.content.split('\n').map((line, i) => (
                         <div key={i}>{line || ' '}</div>
-                      ))}
-                    </code>
-                  </div>
-                </pre>
+                    ))}
+                  </code>
+                </div>
+              </pre>
               }>
                 {Object.keys(highlighterTheme).length > 0 ? (
                   <SyntaxHighlighter
