@@ -1,81 +1,113 @@
 # PasteDump
 
-A modern, responsive pastebin clone for sharing code and text snippets.
+A simple and fast pastebin application built with modern web technologies. Create and share text snippets, code, and logs with ease, featuring syntax highlighting, custom expiration times, and a clean, modern interface.
 
-## Features
+---
 
-- Create and share text/code pastes
-- Syntax highlighting for code
-- Expiration options (1 hour, 1 day, 1 week)
-- View pastes in raw format
-- Search for pastes by content, title, or ID
-- Character limit of 100KB for pastes
-- View count tracking (one increment per session)
-- Responsive design for all devices
+## Tech Stack
 
-## Getting Started
+- **Framework:** [Next.js](https://nextjs.org/) (App Router)
+- **Database:** [Supabase](https://supabase.com/) (PostgreSQL)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components:** [Shadcn/UI](https://ui.shadcn.com/)
+- **Database Migrations:** [node-pg-migrate](https://salsita.github.io/node-pg-migrate/)
+- **Deployment:** [Vercel](https://vercel.com/)
 
-### Prerequisites
+---
 
-- Node.js (v18 or later)
-- npm or yarn
+## Local Development Setup
 
-### Installation
+To run this project on your local machine, follow these steps.
 
-1. Clone the repository
-2. Install dependencies:
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/tegaidogun/pastedump.git
+cd pastedump
+```
+
+### 2. Install Dependencies
 
 ```bash
 npm install
-# or
-yarn
 ```
 
-3. Start the development server:
+### 3. Set Up Supabase
+
+This project requires a Supabase project for its database.
+
+1.  Go to [supabase.com](https://supabase.com/) and create a new project.
+2.  Keep the project dashboard open.
+
+### 4. Configure Environment Variables
+
+You need to create a `.env.local` file in the root of the project to store your Supabase credentials.
+
+1.  Create the file: `touch .env.local`
+2.  Go to your Supabase project's **Settings > API**.
+3.  Add the following variables to your `.env.local` file, getting the values from the API settings page:
+
+    ```bash
+    # .env.local
+
+    # Application keys
+    NEXT_PUBLIC_SUPABASE_URL="...L"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="Y..."
+    SUPABASE_SERVICE_ROLE_KEY="..."
+
+    # Honestly you could just paste all the variables given to you by default, it should be fine
+    ```
+
+4.  Next, go to your Supabase project's **Settings > Database**.
+5.  Under **Connection string**, find the URI that starts with `postgres://`. Make sure to copy the one for **Transaction (session) mode**, not the connection pooler.
+6.  Add this to your `.env.local` file as `DATABASE_URL`:
+
+    ```bash
+    # .env.local
+    
+    # ... (add to the other keys)
+    
+    # Database migration key (use the DIRECT connection string)
+    DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@[...].supabase.co:5432/postgres"
+    ```
+
+### 5. Run Database Migrations
+
+With your environment variables set, run the following command to automatically create the necessary `pastes` table and functions in your Supabase database.
+
+```bash
+npm run migrate:dev up
+```
+
+You only need to do this once for initial setup.
+
+### 6. Run the Development Server
+
+You're all set! Start the development server.
 
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the result.
 
-## Running Tests
+---
 
-The project includes comprehensive API tests. Before running tests, make sure the development server is running:
+## Testing
 
-```bash
-# In one terminal window, start the server
-npm run dev
+The project is configured to run tests using Jest. For a clean testing environment, it's recommended to use a second, separate Supabase project.
 
-# In another terminal window, run the tests
-npm test
+1.  Create a second Supabase project for testing.
+2.  Create a `.env.test` file in the root of the project.
+3.  Fill `.env.test` with the credentials from your **test** project, following the same format as in step 4 above.
+4.  Run the tests:
 
-# Or run tests in watch mode
-npm run test:watch
-```
+    ```bash
+    npm test
+    ```
 
-## API Endpoints
+This command will first automatically migrate your test database to the correct schema and then run the test suite. 
 
-- `POST /api/pastes` - Create a new paste
-- `GET /api/pastes` - Get recent pastes (limited to 5)
-- `GET /api/pastes/:id` - Get a paste by ID
-- `GET /api/pastes/:id/raw` - Get raw content of a paste
-- `GET /api/pastes/search?q=query` - Search for pastes
+## License
 
-## Project Structure
-
-- `/app` - Next.js app directory with pages and API routes
-- `/components` - Reusable UI components
-- `/data` - File-based paste storage
-- `/lib` - Utility functions and database operations
-- `/public` - Static assets
-- `/styles` - Global styles
-- `/tests` - API test suite
-
-## Contact
-
-Tega Idogun - [idogunoghenetega@gmail.com](mailto:idogunoghenetega@gmail.com)
-
-GitHub: [tegaidogun](https://github.com/tegaidogun) 
+This project is licensed under the MIT License.
