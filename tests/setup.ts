@@ -1,26 +1,23 @@
-import { db } from '@vercel/postgres';
+import { supabaseAdmin } from '@/lib/supabaseClient';
 import dotenv from 'dotenv';
 
 beforeAll(async () => {
   // Load environment variables from .env.test
   dotenv.config({ path: '.env.test' });
 
-  const client = await db.connect();
-  
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase credentials must be defined in .env.test');
+  }
+
   try {
-    // Clear the pastes table before running tests
-    await client.sql`
-      DELETE FROM pastes;
-    `;
-    console.log('Test database cleared.');
+    const { error } = await supabaseAdmin.from('pastes').delete().neq('id', -1); // Deletes all rows
+    if (error) throw error;
+    console.log('Test database "pastes" table cleared.');
   } catch (error) {
     console.error('Error clearing test database:', error);
-  } finally {
-    await client.release();
   }
 });
 
 afterAll(async () => {
-  // You might want to add a command to close the connection pool if needed
-  // For @vercel/postgres, it's often managed automatically.
+  // Supabase client doesn't require explicit closing of connections.
 }); 

@@ -1,6 +1,6 @@
 // "use client";
 
-import { sql } from '@vercel/postgres';
+import { supabaseAdmin } from './supabaseClient';
 import { Paste, MAX_CONTENT_LENGTH } from './constants';
 
 // Generate a short ID (6 characters alphanumeric)
@@ -30,8 +30,9 @@ export async function createPaste(
     let isUnique = false;
     while (!isUnique) {
       short_id = generateShortId();
-      const { rows } = await sql`SELECT id FROM pastes WHERE short_id = ${short_id}`;
-      if (rows.length === 0) {
+      const { data, error } = await supabaseAdmin.from('pastes').select('id').eq('short_id', short_id);
+      if (error) throw error;
+      if (data.length === 0) {
         isUnique = true;
       }
     }
@@ -44,47 +45,67 @@ export async function createPaste(
 
   const expirationDate = calculateExpirationDate(paste.expiration);
 
-  const result = await sql`
-    INSERT INTO pastes (short_id, title, content, language, expiration, author)
-    VALUES (${short_id}, ${paste.title || 'Untitled paste'}, ${content}, ${
-    paste.language || 'plain'
-  }, ${expirationDate}, ${paste.author})
-    RETURNING id, short_id, title, content, language, created_at, expiration, view_count, author;
-  `;
+  const { data: newPaste, error } = await supabaseAdmin
+    .from('pastes')
+    .insert({
+      short_id,
+      title: paste.title || 'Untitled paste',
+      content,
+      language: paste.language || 'plain',
+      expiration: expirationDate,
+      author: paste.author,
+    })
+    .select()
+    .single();
+    
+  if (error) {
+    console.error('Error creating paste in Supabase:', error);
+    throw error;
+  }
 
-  return result.rows[0] as Paste;
+  return newPaste as Paste;
 }
 
 // Get a paste by short_id
 export async function getPaste(short_id: string): Promise<Paste | null> {
-  const { rows } = await sql`
-    SELECT id, short_id, title, content, language, created_at, expiration, view_count, author 
-    FROM pastes 
-    WHERE short_id = ${short_id} AND expiration > NOW()
-  `;
+  const { data, error } = await supabaseAdmin
+    .from('pastes')
+    .select('*')
+    .eq('short_id', short_id)
+    .gt('expiration', new Date().toISOString())
+    .single();
 
-  if (rows.length === 0) {
-    return null;
+  if (error && error.code !== 'PGRST116') { // PGRST116 = 0 rows
+    console.error('Error fetching paste from Supabase:', error);
   }
 
-  return rows[0] as Paste;
+  return data;
 }
 
 // Increment view count for a paste
 export async function incrementViewCount(short_id: string): Promise<void> {
-    await sql`UPDATE pastes SET view_count = view_count + 1 WHERE short_id = ${short_id}`;
+  const { error } = await supabaseAdmin.rpc('increment_view_count', {
+    paste_short_id: short_id,
+  });
+  if (error) {
+    console.error('Error incrementing view count:', error);
+  }
 }
 
 // Get recent pastes
 export async function getRecentPastes(limit = 5): Promise<Paste[]> {
-  const { rows } = await sql`
-    SELECT id, short_id, title, content, language, created_at, expiration, view_count, author 
-    FROM pastes 
-    WHERE expiration > NOW()
-    ORDER BY created_at DESC 
-    LIMIT ${limit}
-  `;
-  return rows as Paste[];
+  const { data, error } = await supabaseAdmin
+    .from('pastes')
+    .select('*')
+    .gt('expiration', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+      console.error('Error fetching recent pastes from Supabase:', error);
+      return [];
+  }
+  return data || [];
 }
 
 // Search pastes by content, title, or ID
@@ -93,41 +114,32 @@ export async function searchPastes(
   page = 1,
   perPage = 20
 ): Promise<{ results: Paste[]; total: number }> {
-  const offset = (page - 1) * perPage;
-  const queryLower = `%${query.toLowerCase()}%`;
+    const offset = (page - 1) * perPage;
 
-  // First, try exact ID match
-  const { rows: exactMatch } = await sql`
-    SELECT id, short_id, title, content, language, created_at, expiration, view_count, author 
-    FROM pastes 
-    WHERE short_id = ${query} AND expiration > NOW()
-  `;
+    // First try exact ID match
+    const exactMatch = await getPaste(query);
+    if(exactMatch) {
+        return { results: [exactMatch], total: 1 };
+    }
 
-  if (exactMatch.length > 0) {
-    return { results: exactMatch as Paste[], total: 1 };
-  }
+    // Then search text
+    const { data, error, count } = await supabaseAdmin
+        .from('pastes')
+        .select('*', { count: 'exact' })
+        .textSearch('content', `'${query}'`)
+        .gt('expiration', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .range(offset, offset + perPage - 1);
 
-  // Then search content and title
-  const { rows: searchResults } = await sql`
-    SELECT id, short_id, title, content, language, created_at, expiration, view_count, author 
-    FROM pastes 
-    WHERE (LOWER(title) LIKE ${queryLower} OR LOWER(content) LIKE ${queryLower}) AND expiration > NOW()
-    ORDER BY created_at DESC
-    LIMIT ${perPage} OFFSET ${offset}
-  `;
+    if (error) {
+        console.error('Error searching pastes in Supabase:', error);
+        return { results: [], total: 0 };
+    }
 
-  const { rows: totalRows } = await sql`
-    SELECT COUNT(*) as total
-    FROM pastes
-    WHERE (LOWER(title) LIKE ${queryLower} OR LOWER(content) LIKE ${queryLower}) AND expiration > NOW()
-  `;
-  
-  const total = totalRows[0].total as number;
-
-  return {
-    results: searchResults as Paste[],
-    total,
-  };
+    return {
+        results: data || [],
+        total: count || 0,
+    };
 }
 
 // Calculate expiration date based on expiration option
