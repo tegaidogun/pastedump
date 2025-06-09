@@ -1,10 +1,7 @@
 import SearchForm from "@/components/search-form"
 import SearchResults from "@/components/search-results"
-import { searchPastes, initializeDatabase } from "@/lib/db"
+import { searchPastes } from "@/lib/db"
 import { Paste } from "@/lib/constants"
-
-// Initialize database on server startup
-initializeDatabase();
 
 export interface SearchResultItem {
   id: string;
@@ -39,8 +36,13 @@ export default async function SearchPage({
   };
 
   if (query) {
-    const { results, total } = searchPastes(query, page, perPage);
-    searchResults.results = results;
+    const { results, total } = await searchPastes(query, page, perPage);
+    searchResults.results = results.map(p => ({
+      id: p.short_id as string,
+      title: p.title,
+      created_at: p.created_at,
+      view_count: p.view_count,
+    }));
     searchResults.total = total;
   }
 
