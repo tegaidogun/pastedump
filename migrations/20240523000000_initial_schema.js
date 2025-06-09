@@ -19,21 +19,18 @@ exports.up = (pgm) => {
     },
   });
 
-  pgm.createFunction(
-    'increment_view_count',
-    [{ name: 'paste_short_id', type: 'text' }],
-    {
-      returns: 'void',
-      language: 'plpgsql',
-      body: `
-BEGIN
-  UPDATE pastes
-  SET view_count = view_count + 1
-  WHERE short_id = paste_short_id;
-END;
-      `,
-    }
-  );
+  pgm.sql(`
+    CREATE OR REPLACE FUNCTION increment_view_count(paste_short_id TEXT)
+    RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+      UPDATE pastes
+      SET view_count = view_count + 1
+      WHERE short_id = paste_short_id;
+    END;
+    $$;
+  `);
 
   pgm.sql(`
     ALTER TABLE pastes
