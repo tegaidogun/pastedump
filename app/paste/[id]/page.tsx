@@ -9,8 +9,9 @@ async function getPasteData(id: string): Promise<Paste | null> {
   return getPaste(id);
 }
 
-export default async function PastePage({ params }: { params: { id: string } }) {
-  const paste = await getPasteData(params.id);
+export default async function PastePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const paste = await getPasteData(id);
 
   if (!paste) {
     notFound();

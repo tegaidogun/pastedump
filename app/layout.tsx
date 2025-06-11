@@ -13,7 +13,10 @@ export const metadata = {
   title: "PasteDump - A Minimalist Pastebin Clone",
   description: "A fast and minimalist pastebin clone for sharing code and text snippets by Tega Idogun",
   generator: 'Next.js',
-  creator: 'Tega Idogun'
+  creator: 'Tega Idogun',
+  icons: {
+    icon: '/pastedump.ico',
+  },
 }
 
 export default function RootLayout({

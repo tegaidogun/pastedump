@@ -1,17 +1,27 @@
 // Constants that can be shared between client and server
 export const MAX_CONTENT_LENGTH = 100 * 1024; // 100KB
 
+export type Expiration = "5min" | "1hour" | "1day" | "1week";
+
 // Types
 export interface Paste {
-  id: number;
-  short_id?: string | null;
-  title: string;
+  id: string;
+  short_id: string;
+  title?: string;
   content: string;
   language: string;
-  created_at: string;
   expiration: string;
   view_count: number;
-  author?: string | null;
+  created_at: string;
+  expires_at?: string;
+}
+
+export interface PasteInput {
+  title?: string;
+  content: string;
+  expiration: Expiration;
+  language: string;
+  short_id?: string;
 }
 
 // Supported syntax highlighting languages

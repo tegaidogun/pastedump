@@ -4,10 +4,10 @@ import { incrementViewCount, getPaste } from '@/lib/db';
 // POST /api/pastes/[id]/increment-view - Increment view count once
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     if (!id) {
       return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
@@ -23,7 +23,7 @@ export async function POST(
     return NextResponse.json({ success: true });
     
   } catch (error) {
-    console.error(`Error incrementing view count for ${params.id}:`, error);
+    console.error(`Error incrementing view count for an unknown ID:`, error);
     return NextResponse.json(
       { error: 'Failed to increment view count' },
       { status: 500 }

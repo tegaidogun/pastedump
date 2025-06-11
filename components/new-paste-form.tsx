@@ -9,14 +9,8 @@ import { Label } from "@/components/ui/label"
 import { useState, FormEvent, useEffect, Suspense } from "react"
 import { useRouter } from "next/navigation"
 import { MAX_CONTENT_LENGTH, SUPPORTED_LANGUAGES } from "@/lib/constants"
-import dynamic from 'next/dynamic'
+import CodeBlock from './code-block';
 import { useTheme } from "next-themes"
-
-// Dynamically import SyntaxHighlighter to avoid server-side rendering issues
-const SyntaxHighlighter = dynamic(
-  () => import('react-syntax-highlighter/dist/cjs/prism').then(mod => mod.default),
-  { ssr: false }
-);
 
 export default function NewPasteForm() {
   const router = useRouter();
@@ -26,21 +20,9 @@ export default function NewPasteForm() {
     title: "",
     content: "",
     expiration: "1week",
-    syntax: "plain"
+    language: "plain"
   });
   const [isEditing, setIsEditing] = useState(true);
-  const [highlighterTheme, setHighlighterTheme] = useState({});
-
-  // Load the syntax highlighter style based on the current theme
-  useEffect(() => {
-    // For dark theme, use a light highlighter theme, and for light theme, use a dark one.
-    const styleName = theme === 'dark' ? 'vs' : 'vsc-dark-plus';
-    import(`react-syntax-highlighter/dist/cjs/styles/prism/${styleName}`)
-      .then(style => {
-        setHighlighterTheme(style.default);
-      })
-      .catch(err => console.error("Failed to load syntax highlighter style:", err));
-  }, [theme, isEditing]);
 
   // Calculate remaining characters
   const contentLength = formData.content.length;
@@ -125,7 +107,7 @@ export default function NewPasteForm() {
               <Label htmlFor="language">Language</Label>
               <Select 
                 defaultValue="plain"
-                onValueChange={(value) => setFormData({ ...formData, syntax: value })}
+                onValueChange={(value) => setFormData({ ...formData, language: value })}
               >
                 <SelectTrigger id="language" className="bg-background/50">
                   <SelectValue placeholder="Select language" />
@@ -182,28 +164,11 @@ export default function NewPasteForm() {
                 required
               />
             ) : (
-              <div className="border rounded-md min-h-[300px] overflow-hidden">
-                <Suspense fallback={<div className="p-4">Loading syntax highlighter...</div>}>
-                  {Object.keys(highlighterTheme).length > 0 ? (
-                    <SyntaxHighlighter
-                      language={formData.syntax}
-                      style={highlighterTheme}
-                      customStyle={{
-                        margin: 0,
-                        padding: '1rem',
-                        borderRadius: 0,
-                        minHeight: 300,
-                        backgroundColor: theme === 'dark' ? '#f5f5f5' : '#1e1e1e',
-                        color: theme === 'dark' ? '#333' : '#ddd',
-                      }}
-                      showLineNumbers
-                    >
-                      {formData.content || '// Your code preview will appear here'}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <div className="p-4">Loading syntax highlighter...</div>
-                  )}
-                </Suspense>
+              <div className="border rounded-md min-h-[300px] overflow-hidden flex">
+                <CodeBlock 
+                  code={formData.content || 'Your code preview will appear here.'}
+                  language={formData.language}
+                />
               </div>
             )}
 

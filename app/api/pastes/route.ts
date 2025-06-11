@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPaste, getRecentPastes } from '@/lib/db';
 import { z } from 'zod';
+import { Expiration } from '@/lib/constants';
 
 const pasteSchema = z.object({
   title: z.string().optional(),
   content: z.string().min(1, 'Content is required'),
-  language: z.string().optional(),
-  expiration: z.string(),
-  author: z.string().optional(),
+  language: z.string().default('plain'),
+  expiration: z.custom<Expiration>(),
   short_id: z.string().optional(),
 });
 
@@ -25,10 +25,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Create the paste
-    const paste = await createPaste({
-      ...validation.data,
-      author: 'Tega Idogun',
-    });
+    const paste = await createPaste(validation.data);
     
     // Return the created paste with URL
     return NextResponse.json({
@@ -48,7 +45,7 @@ export async function POST(request: NextRequest) {
 // GET /api/pastes - Get recent pastes
 export async function GET() {
   try {
-    const pastes = await getRecentPastes(5);
+    const pastes = await getRecentPastes();
     
     return NextResponse.json({
       pastes: pastes.map(paste => ({

@@ -45,8 +45,8 @@ export default function RecentPastes() {
     }).format(date);
   };
 
-  const getLanguageLabel = (syntax: string) => {
-    const language = SUPPORTED_LANGUAGES.find(lang => lang.value === syntax);
+  const getLanguageLabel = (languageValue: string) => {
+    const language = SUPPORTED_LANGUAGES.find(lang => lang.value === languageValue);
     return language ? language.label : 'Plain Text';
   };
 
@@ -78,11 +78,11 @@ export default function RecentPastes() {
                   <tr key={paste.id} className="border-b border-border/50 last:border-0">
                     <td className="py-3 px-2 text-sm truncate max-w-[200px]">{paste.title || "Untitled paste"}</td>
                     <td className="py-3 px-2 text-sm font-mono">{paste.id}</td>
-                    <td className="py-3 px-2 text-sm text-muted-foreground">{formatDate(paste.created_at)}</td>
+                    <td suppressHydrationWarning className="py-3 px-2 text-sm text-muted-foreground">{formatDate(paste.created_at)}</td>
                     <td className="py-3 px-2 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Code className="h-3.5 w-3.5" />
-                        <span>{getLanguageLabel(paste.syntax)}</span>
+                        <span>{getLanguageLabel(paste.language)}</span>
                       </div>
                     </td>
                     <td className="py-3 px-2 text-sm text-muted-foreground text-right">{paste.view_count}</td>

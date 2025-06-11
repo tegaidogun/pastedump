@@ -5,9 +5,17 @@ export default function Footer() {
         <p className="text-sm text-muted-foreground">
           &copy; {new Date().getFullYear()} PasteDump. All rights reserved.
         </p>
-        <p className="text-sm text-muted-foreground">
-          Created with ❤️ by <a href="https://github.com/tegaidogun" className="hover:underline">Tega Idogun</a>
-        </p>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <p>
+            Icon by <a href="https://www.flaticon.com/authors/royyan-wijaya" title="code icons" className="hover:underline">Royyan Wijaya</a> from <a href="https://www.flaticon.com/" title="Flaticon" className="hover:underline">Flaticon</a>
+          </p>
+          <p>
+            |
+          </p>
+          <p>
+            Created with ❤️ by <a href="https://github.com/tegaidogun" className="hover:underline">Tega Idogun</a>
+          </p>
+        </div>
       </div>
     </footer>
   )

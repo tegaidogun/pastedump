@@ -7,40 +7,21 @@ import Link from "next/link"
 import { useEffect, useState, Suspense } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Paste, SUPPORTED_LANGUAGES } from "@/lib/constants"
-import dynamic from 'next/dynamic'
-import { useTheme } from "next-themes";
-
-// Dynamically import SyntaxHighlighter to avoid server-side rendering issues
-const SyntaxHighlighter = dynamic(
-  () => import('react-syntax-highlighter/dist/cjs/prism').then(mod => mod.default),
-  { ssr: false }
-);
+import CodeBlock from "./code-block"
 
 export default function PasteView({ paste }: { paste: Paste }) {
-  const { theme } = useTheme();
   // Local state for view count to prevent changing the passed prop directly
   const [viewCount, setViewCount] = useState(paste.view_count);
-  const [highlighterTheme, setHighlighterTheme] = useState({});
   
   // Get language label for display
-  const language = SUPPORTED_LANGUAGES.find(lang => lang.value === paste.syntax) || 
+  const language = SUPPORTED_LANGUAGES.find(lang => lang.value === paste.language) || 
     { value: 'plain', label: 'Plain Text' };
-  
-  // Load syntax highlighter style
-  useEffect(() => {
-    const styleName = theme === 'dark' ? 'vsc-dark-plus' : 'vs';
-    import(`react-syntax-highlighter/dist/cjs/styles/prism/${styleName}`)
-      .then(style => {
-        setHighlighterTheme(style.default);
-      })
-      .catch(err => console.error("Failed to load syntax highlighter style:", err));
-  }, [theme]);
   
   // Only increment view count once on component mount
   useEffect(() => {
     // Only increment if this is a direct page visit, not a client-side navigation
     // This helps prevent duplicate counts
-    const hasIncrementedViewKey = `paste-${paste.id}-view-incremented`;
+    const hasIncrementedViewKey = `paste-${paste.short_id}-view-incremented`;
     const hasIncrementedView = sessionStorage.getItem(hasIncrementedViewKey);
     
     if (!hasIncrementedView) {
@@ -48,7 +29,7 @@ export default function PasteView({ paste }: { paste: Paste }) {
       sessionStorage.setItem(hasIncrementedViewKey, 'true');
       
       // Call the increment view API endpoint
-      fetch(`/api/pastes/${paste.id}/increment-view`, { 
+      fetch(`/api/pastes/${paste.short_id}/increment-view`, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -56,13 +37,16 @@ export default function PasteView({ paste }: { paste: Paste }) {
         if (response.ok) {
           // Only update local view count after successful API call
           setViewCount(prev => prev + 1);
+        } else {
+          // If the API call fails, log the error to the console for debugging
+          response.json().then(err => console.error("Failed to increment view count:", err));
         }
       })
       .catch(error => {
         console.error("Failed to increment view count:", error);
       });
     }
-  }, [paste.id]); // Only run this effect on initial mount and if paste ID changes
+  }, [paste.short_id]); // Only run this effect on initial mount and if paste ID changes
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -83,20 +67,20 @@ export default function PasteView({ paste }: { paste: Paste }) {
             <div>
               <CardTitle className="text-xl md:text-2xl">{paste.title || "Untitled paste"}</CardTitle>
               <CardDescription className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                <span>Created: {formatDate(paste.created_at)}</span>
+                <span suppressHydrationWarning>Created: {formatDate(paste.created_at)}</span>
                 <span className="flex items-center gap-1">
                   <Eye className="h-4 w-4" />
                   {viewCount} views
                 </span>
                 <span>
-                  ID: <code className="text-xs bg-background/70 px-1 py-0.5 rounded">{paste.id}</code>
+                  ID: <code className="text-xs bg-background/70 px-1 py-0.5 rounded">{paste.short_id}</code>
                 </span>
                 <span className="flex items-center gap-1">
                   <Code className="h-4 w-4" />
                   {language.label}
                 </span>
                 {paste.expires_at && (
-                  <span>Expires: {formatDate(paste.expires_at)}</span>
+                  <span suppressHydrationWarning>Expires: {formatDate(paste.expires_at)}</span>
                 )}
               </CardDescription>
             </div>
@@ -106,7 +90,7 @@ export default function PasteView({ paste }: { paste: Paste }) {
                 Copy
               </Button>
               <Button variant="outline" size="sm" className="h-8" asChild>
-                <Link href={`/api/pastes/${paste.id}/raw`}>
+                <Link href={`/api/pastes/${paste.short_id}/raw`}>
                   <FileText className="h-3.5 w-3.5 mr-1" />
                   Raw
                 </Link>
@@ -125,7 +109,7 @@ export default function PasteView({ paste }: { paste: Paste }) {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `${paste.id}.txt`;
+                    a.download = `${paste.short_id}.txt`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -138,7 +122,7 @@ export default function PasteView({ paste }: { paste: Paste }) {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `${paste.id}.json`;
+                    a.download = `${paste.short_id}.json`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -161,43 +145,8 @@ export default function PasteView({ paste }: { paste: Paste }) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="relative rounded-md border border-border/50 bg-background/50 overflow-hidden">
-            <div className="overflow-x-auto">
-              <Suspense fallback={
-              <pre className="p-4 text-sm font-mono">
-                <div className="flex">
-                  <div className="select-none text-muted-foreground pr-4 text-right">
-                      {paste.content.split('\n').map((_, i) => (
-                      <div key={i}>{i + 1}</div>
-                    ))}
-                  </div>
-                  <code className="flex-1">
-                      {paste.content.split('\n').map((line, i) => (
-                        <div key={i}>{line || ' '}</div>
-                    ))}
-                  </code>
-                </div>
-              </pre>
-              }>
-                {Object.keys(highlighterTheme).length > 0 ? (
-                  <SyntaxHighlighter
-                    language={paste.syntax}
-                    style={highlighterTheme}
-                    showLineNumbers
-                    wrapLines
-                    customStyle={{
-                      margin: 0,
-                      borderRadius: 0,
-                      minHeight: 100,
-                    }}
-                  >
-                    {paste.content}
-                  </SyntaxHighlighter>
-                ) : (
-                  <div className="p-4">Loading syntax highlighter...</div>
-                )}
-              </Suspense>
-            </div>
+          <div className="border rounded-md overflow-auto flex">
+            <CodeBlock code={paste.content} language={paste.language} />
           </div>
         </CardContent>
         <CardFooter className="flex justify-center">

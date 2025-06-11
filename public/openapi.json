@@ -1,0 +1,142 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PasteDump API",
+    "version": "1.0.0",
+    "description": "A simple API for creating and retrieving text pastes."
+  },
+  "servers": [
+    {
+      "url": "https://pastedump.tegaidogun.dev"
+    }
+  ],
+  "paths": {
+    "/api/pastes": {
+      "post": {
+        "summary": "Create a new paste",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "The content of the paste."
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "The language for syntax highlighting."
+                  },
+                  "expiration": {
+                    "type": "string",
+                    "enum": ["5min", "1hour", "1day", "1week"],
+                    "description": "The expiration time for the paste."
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "An optional title for the paste."
+                  }
+                },
+                "required": ["content", "language", "expiration"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Paste created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Paste"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pastes/{id}": {
+      "get": {
+        "summary": "Get a paste by its short ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The 6-character short ID of the paste to retrieve."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Paste"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Paste not found"
+          }
+        }
+      }
+    },
+    "/api/pastes/{id}/raw": {
+      "get": {
+        "summary": "Get the raw content of a paste",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The 6-character short ID of the paste to retrieve."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Paste not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Paste": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "short_id": { "type": "string" },
+          "title": { "type": "string" },
+          "content": { "type": "string" },
+          "language": { "type": "string" },
+          "expiration": { "type": "string", "format": "date-time" },
+          "view_count": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    }
+  }
+} 
